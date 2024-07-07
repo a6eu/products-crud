@@ -1,20 +1,26 @@
 const Product = require('../models/productModel');
 
-// @desc    Get all products
-// @route   GET /api/products
-// @access  Public
 const getProducts = async (req, res) => {
     try {
-        const products = await Product.find();
+        let query = {};
+
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
+            query = {
+                $or: [
+                    { name: searchRegex },
+                    { description: searchRegex },
+                ]
+            };
+        }
+
+        const products = await Product.find(query);
         res.json(products);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// @desc    Get a product by ID
-// @route   GET /api/products/:id
-// @access  Public
 const getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -27,17 +33,16 @@ const getProductById = async (req, res) => {
     }
 };
 
-// @desc    Create a new product
-// @route   POST /api/products
-// @access  Public
 const createProduct = async (req, res) => {
-    const { name, description, price } = req.body;
+    const { name, description, price, status } = req.body;
     if (!name || !price) {
         return res.status(400).json({ message: 'Name and price are required' });
     }
 
+    const images = req.files.map(file => file.path);
+
     try {
-        const newProduct = new Product({ name, description, price });
+        const newProduct = new Product({ name, description, price, status, images });
         const savedProduct = await newProduct.save();
         res.status(201).json(savedProduct);
     } catch (err) {
@@ -45,11 +50,8 @@ const createProduct = async (req, res) => {
     }
 };
 
-// @desc    Update a product
-// @route   PUT /api/products/:id
-// @access  Public
 const updateProduct = async (req, res) => {
-    const { name, description, price } = req.body;
+    const { name, description, price, status } = req.body;
 
     try {
         const product = await Product.findById(req.params.id);
@@ -60,6 +62,12 @@ const updateProduct = async (req, res) => {
         if (name) product.name = name;
         if (description) product.description = description;
         if (price) product.price = price;
+        if (status) product.status = status;
+
+        if (req.files && req.files.length > 0) {
+            const images = req.files.map(file => file.path);
+            product.images = images;
+        }
 
         const updatedProduct = await product.save();
         res.json(updatedProduct);
@@ -68,9 +76,6 @@ const updateProduct = async (req, res) => {
     }
 };
 
-// @desc    Delete a product
-// @route   DELETE /api/products/:id
-// @access  Public
 const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);

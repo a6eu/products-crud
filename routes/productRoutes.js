@@ -7,6 +7,7 @@ const {
     updateProduct,
     deleteProduct,
 } = require('../controllers/productController');
+const upload = require('../middleware/upload');
 
 /**
  * @swagger
@@ -30,6 +31,15 @@ const {
  *         price:
  *           type: number
  *           description: The price of the product
+ *         status:
+ *           type: string
+ *           description: The status of the product
+ *           enum: [active, archive]
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: URLs or paths to product images
  *         dateAdded:
  *           type: string
  *           format: date
@@ -39,6 +49,10 @@ const {
  *         name: Widget
  *         description: A useful widget
  *         price: 19.99
+ *         status: active
+ *         images:
+ *           - https://example.com/image1.jpg
+ *           - https://example.com/image2.jpg
  *         dateAdded: 2023-07-01T00:00:00.000Z
  */
 
@@ -114,7 +128,7 @@ router.get('/:id', getProductById);
  *       400:
  *         description: Invalid product data provided
  */
-router.post('/', createProduct);
+router.post('/', upload.array('images', 10), createProduct);
 
 /**
  * @swagger
@@ -147,7 +161,7 @@ router.post('/', createProduct);
  *       400:
  *         description: Invalid product data provided
  */
-router.put('/:id', updateProduct);
+router.put('/:id', upload.array('images', 10), updateProduct);
 
 /**
  * @swagger
